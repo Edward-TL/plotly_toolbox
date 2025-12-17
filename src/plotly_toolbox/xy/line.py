@@ -36,14 +36,14 @@ class LinePlot(TwoDimensionGraph):
         super().__post_init__()
 
     def gen_simple_line_data(self) -> dict:
-        line_data = {'shape': self.line_shape}
+        line_layout = {'shape': self.line_shape}
 
         if self.palette:
-            line_data["color"] = self.palette.colors[0]
+            line_layout["color"] = self.palette.colors[0]
         if self.color:
-            line_data["color"] = self.color
+            line_layout["color"] = self.color
 
-        return line_data
+        return line_layout
     
     def add_trendline(self):
         slope, intercept = np.polyfit(self.x_values, self.y_values, 1)
@@ -77,13 +77,13 @@ class OneLinePlot(LinePlot):
     def __post_init__(self):
         super().__post_init__()
         
-        line_data = self.gen_simple_line_data()
+        line_layout = self.gen_simple_line_data()
         
         self.plot = go.Scatter(
             x = self.x_values,
             y = self.y_values,
             name = self.name,
-            line = line_data,
+            line = line_layout,
             showlegend = False,
             mode = self.line
         )
@@ -131,16 +131,16 @@ class CategoricalLines(TwoDimensionGraph):
             area_colors = self.colors
 
         if area_colors:
-            line_data = [
+            line_layout = [
                 {
                 'shape': self.line_shape,
                 'color': area_colors[n]
                 } for n in self.category_values
             ]
         else:
-            line_data = [{'shape': self.line_shape}] * len(self.category_values)
+            line_layout = [{'shape': self.line_shape}] * len(self.category_values)
 
-        return line_data
+        return line_layout
 
 @dataclass(kw_only=True)
 class MultiLinePlot(CategoricalLines):
