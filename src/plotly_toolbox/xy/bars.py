@@ -41,7 +41,7 @@ class BarsMarker:
 class BarPlot(TwoDimensionGraph):
     subplot_type: Optional[PlotlySublotType] = 'xy'
     barmode: BarMode = 'stack'
-    orientation: Literal['h', 'v'] = 'h'
+    orientation: Literal['h', 'v'] = 'v'
     hover_data: Optional[list] = None
     bar_colors: Optional[list] = None
     bar_markers: Optional[Union[list["BarsMarker"], list[dict], list[str], list[list]]] = None

@@ -245,13 +245,30 @@ class Graph:
             'font': {'color': theme_obj.font_color, 'family': theme_obj.font},
         }
 
+    def title_dict(self) -> dict:
+        """Figure title (with optional subtitle) fragment."""
+        title = {'text': self.name}
+        if self.subtitle:
+            title['subtitle'] = {'text': self.subtitle, 'font': {'color': 'gray', 'size': 12}}
+        return title
+
+    def styled_layout(self) -> dict:
+        """Palette/template + chart title — the common layout base for simple charts."""
+        layout: dict = {}
+        if self.palette is not None:
+            deep_merge(layout, self.color_layout())
+        elif self.template:
+            layout['template'] = self.template
+        layout['title'] = self.title_dict()
+        return layout
+
 
 @dataclass(kw_only=True)
 class OneDimensionPlot(Graph):
     """Base for 1D charts (pie, donut, …)."""
 
     def layout_patch(self) -> dict:
-        return self.color_layout()
+        return self.styled_layout()
 
 
 # ---------------------------------------------------------------------------

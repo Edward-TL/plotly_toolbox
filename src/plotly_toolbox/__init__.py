@@ -13,6 +13,7 @@ from plotly_toolbox.core import (
     get_option,
     set_option,
 )
+from plotly_toolbox.domain.pie import DonutPlot, PiePlot
 from plotly_toolbox.palettes import DARK, DEFAULT, MINIMAL
 from plotly_toolbox.xy.area import (
     AreaPlot,
@@ -27,14 +28,18 @@ from plotly_toolbox.xy.bars import (
     ComparisonBars,
     OneCategoryBars,
 )
+from plotly_toolbox.xy.distribution import BoxPlot, DistributionPlot, ViolinPlot
+from plotly_toolbox.xy.heatmap import Heatmap
+from plotly_toolbox.xy.histogram import Histogram
 from plotly_toolbox.xy.line import (
     CategoricalLines,
     LinePlot,
     MultiLinePlot,
     OneLinePlot,
 )
+from plotly_toolbox.xy.scatter import ScatterPlot
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 __all__ = [
     # options / config
@@ -70,4 +75,14 @@ __all__ = [
     "OneCategoryBars",
     "ComparisonBars",
     "ComparasionBars",
+    # scatter / distribution / heatmap
+    "ScatterPlot",
+    "Histogram",
+    "DistributionPlot",
+    "BoxPlot",
+    "ViolinPlot",
+    "Heatmap",
+    # domain
+    "PiePlot",
+    "DonutPlot",
 ]

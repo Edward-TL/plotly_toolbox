@@ -3,6 +3,26 @@
 All notable changes to this project are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] — Common chart types (Improvement Plan Phase 3, Tier 1)
+
+### Added
+- `ScatterPlot` (`xy/scatter.py`): markers by default, optional `size_col` /
+  `color_col` encodings and colorscale, inherits trendline support.
+- `Histogram` (`xy/histogram.py`): `nbins`, `cumulative`, `histnorm`, and
+  optional per-category overlay.
+- `BoxPlot` / `ViolinPlot` (`xy/distribution.py`, shared `DistributionPlot`
+  base): distribution over a value column, optional category grouping,
+  horizontal/vertical orientation.
+- `Heatmap` (`xy/heatmap.py`): builds from long `(x_col, y_col, z_col)` columns
+  (pivoted internally) or a wide matrix DataFrame; optional cell text.
+- `PiePlot` / `DonutPlot` (`domain/pie.py`): from labels/values columns, palette
+  colors applied automatically.
+- `Graph.styled_layout()` / `title_dict()` helpers shared by the new simple charts.
+
+### Changed
+- **`BarPlot` default orientation is now `'v'` (vertical)** to match Plotly's
+  convention. Pass `orientation='h'` for the previous behavior.
+
 ## [0.2.0] — Core consolidation (Improvement Plan Phase 2)
 
 ### Added
