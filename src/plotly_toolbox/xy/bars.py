@@ -135,9 +135,9 @@ class OneCategoryBars(BarPlot):
 
 
 @dataclass(kw_only=True)
-class ComparasionBars(BarPlot):
+class ComparisonBars(BarPlot):
     """
-    Representation of Bar Plot
+    Representation of a grouped Bar Plot comparing a category across series.
     """
     category_col: Optional[str] = None
     category_values: Optional[list | int | str | float] = None
@@ -149,16 +149,15 @@ class ComparasionBars(BarPlot):
         if not self.category_col and not self.category_values:
             ve_msg = "Needed `category_col` name or `category_values` iterable. Both are `None`"
             raise ValueError(ve_msg)
-        
+
         if self.category_values is None:
             self.category_values = sorted(list(self.df[self.category_col].unique()))
 
         if not isinstance(self.category_values, list):
             self.category_values = [self.category_values]
 
-        print(self.category_values)
-        self.fig = go.Figure(
-            data = [
+        self.fig.add_traces(
+            [
                 go.Bar(
                     x = self.df[self.df[self.category_col] == category][self.x_axis],
                     y = self.df[self.df[self.category_col] == category][self.y_axis],
@@ -171,10 +170,11 @@ class ComparasionBars(BarPlot):
             ]
         )
         self.fig.update_layout(barmode = self.barmode)
-        if self.palette:
-            self.update_layout_colors(self.palette.main)
-            
-        self.update_layout_titles()
+        self.general_layout_update()
+
+
+# Backwards-compatible alias for the previous (misspelled) class name.
+ComparasionBars = ComparisonBars
 
     # def gen_categorical_bars_data(self) -> dict:
     #     marker_colors = None

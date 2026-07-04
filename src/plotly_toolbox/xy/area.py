@@ -74,18 +74,21 @@ class MultiAreaPlot(CategoricalAreas):
     def __post_init__(self):
         super().__post_init__()
             
-        if isinstance(self.fill_type, (str, FillType)):
+        if isinstance(self.fill_type, str):
+            if self.fill_type not in fill_types_allowed:
+                ft_err = f"`fill_type` must be one of {fill_types_allowed}. Got: {self.fill_type}"
+                raise ValueError(ft_err)
             fill_type = [self.fill_type] * len(self.category_values)
             fill_type[0] = 'tozeroy'
-        
+
         elif isinstance(self.fill_type, (list, tuple)):
-            fill_type = tuple(self.fill_type.copy())
-        
+            fill_type = list(self.fill_type)
+
         else:
-            ft_err = f"`fill_type` must be in {fill_types_allowed=}. Got: {self.fill_type}"
+            ft_err = f"`fill_type` must be a str or list of {fill_types_allowed}. Got: {self.fill_type}"
             raise ValueError(ft_err)
 
-        line_data = self.gen_miltiple_line_data()
+        line_data = self.gen_multiple_line_data()
 
         self.fig.add_traces(
             [

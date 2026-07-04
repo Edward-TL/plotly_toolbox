@@ -78,10 +78,21 @@ class Palette:
     main: ThemePalette = 'light'
 
     def __post_init__(self):
-        self.colors = getattr(self, self.main).colors
+        main_theme = getattr(self, self.main)
+        self.colors = main_theme.colors or []
         self.categories = {f'cat_{c}': color for c, color in enumerate(self.colors)}
         for c, color in enumerate(self.colors):
             setattr(self, f"cat_{c}", color)
+
+    def resolve(self, theme: Optional[ThemePalette] = None) -> Theme:
+        """Return the Theme object for `theme` (defaults to the palette's main theme)."""
+        return getattr(self, theme or self.main)
+
+    def color(self, index: int) -> Optional[str]:
+        """Return a color from the cycle by index (wraps around). None if no colors."""
+        if not self.colors:
+            return None
+        return self.colors[index % len(self.colors)]
 
 @dataclass(kw_only=True)
 class Graph:
@@ -113,10 +124,15 @@ class Graph:
             template = self.template
         )
     def update_layout_colors(self, theme: ThemePalette = 'light'):
+        if self.palette is None:
+            return
+        theme_obj = self.palette.resolve(theme)
+        if theme_obj is None:
+            return
         self.fig.update_layout(
-            plot_bgcolor = self.palette_data[f'{theme}_plot_bg'],
-            paper_bgcolor = self.palette_data[f'{theme}_paper_bg'],
-            font = {'color': self.palette_data[f'{theme}_font']},
+            plot_bgcolor = theme_obj.plot_bg,
+            paper_bgcolor = theme_obj.paper_bg,
+            font = {'family': theme_obj.font},
         )
 
 @dataclass(kw_only=True)
@@ -127,12 +143,15 @@ class OneDimensionPlot(Graph):
     - Donut
     """
     def update_layout(self):
-        """Updates layout"""
-        self.fig.update_layout(
-                hoverinfo = 'label+percent',
-                textinfo = 'value',
-                marker = {'colors' : self.palette.colors}
-            )
+        """Updates traces and layout"""
+        trace_update = {
+            'hoverinfo': 'label+percent',
+            'textinfo': 'value',
+        }
+        if self.palette is not None and self.palette.colors:
+            trace_update['marker'] = {'colors': self.palette.colors}
+        self.fig.update_traces(**trace_update)
+
         if self.palette is not None:
             self.update_layout_colors(self.palette.main)
 
@@ -216,34 +235,33 @@ class TwoDimensionGraph(Graph):
             yaxis_title = self.y_title
         )
 
-    def update_layout_colors(self, theme: Literal['main', 'light', 'dark']) -> None:
-        """
-        Updates figure layout related to colors
-        """
-
-        self.fig.update_layout(
-            plot_bg_color = self.palette.theme
-        )
-    
     def update_layout_tick_text(self) -> None:
         if self.x_tick_text_vals is not None:
+            tickvals = (
+                list(self.x_tick_vals)
+                if self.x_tick_vals is not None
+                else list(range(1, len(self.x_tick_text_vals) + 1))
+            )
             self.fig.update_layout(
                 xaxis = {
-                    "ticktext" : self.x_tick_text_vals,
-                    "tickvals": list(range(1, len(self.x_tick_text_vals)+1))
-                    }
-                    # tickmode = 'array',
-                    # tickvals = [1, 3, 5, 7, 9, 11],
-                    # ticktext = self.x_tick_texts
-                # )
+                    "tickmode": "array",
+                    "ticktext": self.x_tick_text_vals,
+                    "tickvals": tickvals,
+                }
             )
-        
+
         if self.y_tick_text_vals is not None:
+            tickvals = (
+                list(self.y_tick_vals)
+                if self.y_tick_vals is not None
+                else list(range(1, len(self.y_tick_text_vals) + 1))
+            )
             self.fig.update_layout(
                 yaxis = {
-                    "ticktext" : self.y_tick_text_vals,
-                    "tickvals": list(range(1, len(self.y_tick_text_vals)+1))
-                    }
+                    "tickmode": "array",
+                    "ticktext": self.y_tick_text_vals,
+                    "tickvals": tickvals,
+                }
             )
 
     def set_x_axis_to_hours(self):

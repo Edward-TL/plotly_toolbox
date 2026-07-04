@@ -1,14 +1,22 @@
 [project]
 name = "plotly-toolbox"
-version = "0.1.0"
-description = ""
+version = "0.1.1"
+description = "Object-oriented, sensible-defaults wrapper around Plotly for building common charts fast."
 authors = [
     {name = "Edward",email = "edward_tl@hotmail.com"}
 ]
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.10"
 dependencies = [
-    "plotly (>=6.3.1,<7.0.0)"
+    "plotly (>=6.3.1,<7.0.0)",
+    "pandas (>=2.0)",
+    "numpy (>=1.24)",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "ruff>=0.6",
 ]
 
 [tool.poetry]
@@ -18,3 +26,15 @@ packages = [{include = "plotly_toolbox", from = "src"}]
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

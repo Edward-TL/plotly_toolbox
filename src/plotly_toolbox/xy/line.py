@@ -16,7 +16,7 @@ from plotly_toolbox.core import TwoDimensionGraph
 LineMode = Literal[
     'lines', 'markers', 'text',
     'lines+markers', 'lines+text', 'markers+text',
-    'lines+markers+text'
+    'lines+markers+text',
     'none'
 ]
 
@@ -46,9 +46,18 @@ class LinePlot(TwoDimensionGraph):
         return line_layout
     
     def add_trendline(self):
-        slope, intercept = np.polyfit(self.x_values, self.y_values, 1)
+        # np.polyfit needs numeric x; map datetime/categorical x to ordinals for the fit
+        # while still plotting the trendline against the original x values.
+        x_series = pd.Series(self.x_values).reset_index(drop=True)
+        if pd.api.types.is_numeric_dtype(x_series):
+            x_numeric = x_series.to_numpy(dtype=float)
+        else:
+            x_numeric = np.arange(len(x_series), dtype=float)
+
+        y_numeric = np.asarray(self.y_values, dtype=float)
+        slope, intercept = np.polyfit(x_numeric, y_numeric, 1)
         # Generate trendline y-values
-        self.trendline_y = slope * self.x_values + intercept
+        self.trendline_y = slope * x_numeric + intercept
 
         trendline_data = {
             'dash': 'dash',
@@ -89,7 +98,6 @@ class OneLinePlot(LinePlot):
         )
 
         self.fig.add_traces([self.plot])
-        self.general_layout_update()
 
         if self.trendline_color:
             self.add_trendline()
@@ -119,28 +127,26 @@ class CategoricalLines(TwoDimensionGraph):
             if isinstance(self.category_values[0], int):
                 self.category_values.sort()
 
-    def gen_miltiple_line_data(self) -> dict:
-        area_colors = None
-        if self.palette:
-            size = len(self.x_values)
-            area_colors = [
-                self.palette.colors[n % size] for n in size
-            ]
+    def gen_multiple_line_data(self) -> list[dict]:
+        n_categories = len(self.category_values)
+        colors = None
+
+        if self.palette and self.palette.colors:
+            colors = [self.palette.color(i) for i in range(n_categories)]
 
         if self.colors:
-            area_colors = self.colors
+            colors = self.colors
 
-        if area_colors:
-            line_layout = [
-                {
-                'shape': self.line_shape,
-                'color': area_colors[n]
-                } for n in self.category_values
+        if colors:
+            return [
+                {'shape': self.line_shape, 'color': colors[i % len(colors)]}
+                for i in range(n_categories)
             ]
-        else:
-            line_layout = [{'shape': self.line_shape}] * len(self.category_values)
 
-        return line_layout
+        return [{'shape': self.line_shape} for _ in range(n_categories)]
+
+    # Backwards-compatible alias for the previous (misspelled) method name.
+    gen_miltiple_line_data = gen_multiple_line_data
 
 @dataclass(kw_only=True)
 class MultiLinePlot(CategoricalLines):
@@ -149,13 +155,13 @@ class MultiLinePlot(CategoricalLines):
     def __post_init__(self):
         super().__post_init__()
 
-        lines_data = self.gen_miltiple_line_data()
+        lines_data = self.gen_multiple_line_data()
         self.fig.add_traces(
             [
                 go.Scatter(
                     x = self.df[self.df[self.category_col] == category][self.x_axis],
                     y = self.df[self.df[self.category_col] == category][self.y_axis],
-                    mode = 'lines',
+                    mode = self.lines,
                     name = category,
                     line = lines_data[n],
                     showlegend = self.show_legend
