@@ -23,6 +23,13 @@ All notable changes to this project are documented here. This project adheres to
 - **`BarPlot` default orientation is now `'v'` (vertical)** to match Plotly's
   convention. Pass `orientation='h'` for the previous behavior.
 
+### Docs & examples (Improvement Plan Phase 4)
+- `examples/gallery.py`: one runnable example of every chart type, written to
+  `examples/output/` as HTML. `build_gallery()` is imported by the test suite so
+  the examples can't silently rot.
+- README rewritten against the real API, with a chart catalog and palette usage.
+- `tests/test_examples.py` renders every gallery chart (59 tests total).
+
 ## [0.2.0] — Core consolidation (Improvement Plan Phase 2)
 
 ### Added
