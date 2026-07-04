@@ -63,14 +63,14 @@ def test_multi_line_plot_with_palette_colors(category_df, palette):
 
 
 def test_multi_line_plot_respects_mode(category_df):
-    # Regression: mode was hardcoded to 'lines', ignoring the `lines` field.
+    # Regression: mode was hardcoded to 'lines', ignoring the series mode.
     chart = MultiLinePlot(
         df=category_df,
         name="By region",
         x_axis="month",
         y_axis="sales",
         category_col="region",
-        lines="lines+markers",
+        mode="lines+markers",
     )
     assert chart.fig.to_dict()["data"][0]["mode"] == "lines+markers"
 

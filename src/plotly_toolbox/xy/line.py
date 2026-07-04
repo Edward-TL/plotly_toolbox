@@ -1,23 +1,26 @@
-"""
-Collection of Two dimensional Graphs
-"""
+"""Line charts (single and multi-series)."""
 
-from dataclasses import dataclass, asdict
+from __future__ import annotations
+
+import warnings
+from dataclasses import dataclass
 from typing import Literal, Optional
-
-from plotly import graph_objects as go
 
 import numpy as np
 import pandas as pd
+from plotly import graph_objects as go
 
-from plotly_toolbox.core import TwoDimensionGraph
-
+from plotly_toolbox.core import (
+    CategorySplit,
+    PlotlySublotType,
+    TwoDimensionGraph,
+)
 
 LineMode = Literal[
     'lines', 'markers', 'text',
     'lines+markers', 'lines+text', 'markers+text',
     'lines+markers+text',
-    'none'
+    'none',
 ]
 
 LineShape = Literal['linear', 'spline', 'hv', 'vh', 'hvh', 'vhv']
@@ -25,29 +28,36 @@ LineShape = Literal['linear', 'spline', 'hv', 'vh', 'hvh', 'vhv']
 
 @dataclass(kw_only=True)
 class LinePlot(TwoDimensionGraph):
-    subplot_type = 'xy'
+    subplot_type: Optional[PlotlySublotType] = 'xy'
     color: Optional[str] = None
-    line: LineMode = 'lines'
+    mode: LineMode = 'lines'
     line_shape: LineShape = 'linear'
     trendline_color: Optional[str] = None
     trendline_name: str = 'trendline'
+    # Deprecated: use `mode` instead.
+    line: Optional[LineMode] = None
 
     def __post_init__(self):
         super().__post_init__()
+        if self.line is not None:
+            warnings.warn(
+                "`line=` is deprecated; use `mode=` instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            self.mode = self.line
 
     def gen_simple_line_data(self) -> dict:
         line_layout = {'shape': self.line_shape}
-
-        if self.palette:
+        if self.palette and self.palette.colors:
             line_layout["color"] = self.palette.colors[0]
         if self.color:
             line_layout["color"] = self.color
-
         return line_layout
-    
-    def add_trendline(self):
-        # np.polyfit needs numeric x; map datetime/categorical x to ordinals for the fit
-        # while still plotting the trendline against the original x values.
+
+    def _trendline_trace(self) -> go.Scatter:
+        # np.polyfit needs numeric x; map datetime/categorical x to ordinals for the
+        # fit while still plotting the trendline against the original x values.
         x_series = pd.Series(self.x_values).reset_index(drop=True)
         if pd.api.types.is_numeric_dtype(x_series):
             x_numeric = x_series.to_numpy(dtype=float)
@@ -56,123 +66,93 @@ class LinePlot(TwoDimensionGraph):
 
         y_numeric = np.asarray(self.y_values, dtype=float)
         slope, intercept = np.polyfit(x_numeric, y_numeric, 1)
-        # Generate trendline y-values
         self.trendline_y = slope * x_numeric + intercept
 
-        trendline_data = {
-            'dash': 'dash',
-            'shape': self.line_shape
-            }
+        trendline_data = {'dash': 'dash', 'shape': self.line_shape}
         if self.trendline_color:
             trendline_data['color'] = self.trendline_color
 
-        self.fig.add_trace(
-            go.Scatter(
-                x = self.x_values,
-                y = self.trendline_y,
-                mode = 'lines',
-                line = trendline_data,
-                name = self.trendline_name
-            )
+        return go.Scatter(
+            x=self.x_values,
+            y=self.trendline_y,
+            mode='lines',
+            line=trendline_data,
+            name=self.trendline_name,
         )
 
 
 @dataclass(kw_only=True)
 class OneLinePlot(LinePlot):
-    """
-    Representation of Line Plot
-    """
-    color: Optional[str] = None
-    def __post_init__(self):
-        super().__post_init__()
-        
-        line_layout = self.gen_simple_line_data()
-        
-        self.plot = go.Scatter(
-            x = self.x_values,
-            y = self.y_values,
-            name = self.name,
-            line = line_layout,
-            showlegend = False,
-            mode = self.line
-        )
+    """A single-series line plot, with an optional trendline."""
 
-        self.fig.add_traces([self.plot])
-
+    def build_traces(self) -> list:
+        traces = [
+            go.Scatter(
+                x=self.x_values,
+                y=self.y_values,
+                name=self.name,
+                line=self.gen_simple_line_data(),
+                showlegend=False,
+                mode=self.mode,
+            )
+        ]
         if self.trendline_color:
-            self.add_trendline()
-
-        self.general_layout_update()
+            traces.append(self._trendline_trace())
+        return traces
 
 
 @dataclass(kw_only=True)
-class CategoricalLines(TwoDimensionGraph):
-    colors: Optional[str] = None
-    lines: LineMode = 'lines'
+class CategoricalLines(CategorySplit, TwoDimensionGraph):
+    subplot_type: Optional[PlotlySublotType] = 'xy'
+    mode: LineMode = 'lines'
     line_shape: LineShape = 'linear'
-
-    category_col: Optional[str] = None
-    category_values: Optional[list | tuple | pd.Series] = None
     color_col: Optional[str] = None
+    # Deprecated: use `mode` instead.
+    lines: Optional[LineMode] = None
 
     def __post_init__(self):
         super().__post_init__()
-        if not self.category_col and not self.category_values:
-            ve_msg = "Needed `category_col` name or `category_values` iterable. Both are `None`"
-            raise ValueError(ve_msg)
-        
-        if self.category_col:
-            self.category_values = self.df[self.category_col].unique().tolist()
+        if self.lines is not None:
+            warnings.warn(
+                "`lines=` is deprecated; use `mode=` instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            self.mode = self.lines
+        self.resolve_categories()
 
-            if isinstance(self.category_values[0], int):
-                self.category_values.sort()
+    def line_layouts(self) -> list[dict]:
+        """One line-style dict per category, coloured from the palette/`colors`."""
+        layouts = []
+        for index in range(len(self.category_values)):
+            layout = {'shape': self.line_shape}
+            color = self.series_color(index)
+            if color:
+                layout['color'] = color
+            layouts.append(layout)
+        return layouts
 
+    # Backwards-compatible alias for the previous method name.
     def gen_multiple_line_data(self) -> list[dict]:
-        n_categories = len(self.category_values)
-        colors = None
+        return self.line_layouts()
 
-        if self.palette and self.palette.colors:
-            colors = [self.palette.color(i) for i in range(n_categories)]
-
-        if self.colors:
-            colors = self.colors
-
-        if colors:
-            return [
-                {'shape': self.line_shape, 'color': colors[i % len(colors)]}
-                for i in range(n_categories)
-            ]
-
-        return [{'shape': self.line_shape} for _ in range(n_categories)]
-
-    # Backwards-compatible alias for the previous (misspelled) method name.
     gen_miltiple_line_data = gen_multiple_line_data
+
 
 @dataclass(kw_only=True)
 class MultiLinePlot(CategoricalLines):
-    """Representation of a Graph with multiple Lines"""
-    
-    def __post_init__(self):
-        super().__post_init__()
+    """A line plot with one line per category."""
 
-        lines_data = self.gen_multiple_line_data()
-        self.fig.add_traces(
-            [
-                go.Scatter(
-                    x = self.df[self.df[self.category_col] == category][self.x_axis],
-                    y = self.df[self.df[self.category_col] == category][self.y_axis],
-                    mode = self.lines,
-                    name = category,
-                    line = lines_data[n],
-                    showlegend = self.show_legend
-                ) for n, category in enumerate(self.category_values)
-            ]
-        )
-        
-        self.general_layout_update()
-
-    # def add_trendline(self):
-    #     y_trendline = np.polyfit(
-    #         self.x_values,
-    #     )
-    #     self.fig.add_trace()
+    def build_traces(self) -> list:
+        layouts = self.line_layouts()
+        return [
+            go.Scatter(
+                x=sub_df[self.x_axis],
+                y=sub_df[self.y_axis],
+                mode=self.mode,
+                name=str(category),
+                line=layouts[index],
+                showlegend=self.show_legend,
+            )
+            for index, category, sub_df, _ in self.iter_series()
+        ]

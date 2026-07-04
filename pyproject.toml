@@ -1,6 +1,6 @@
 [project]
 name = "plotly-toolbox"
-version = "0.1.1"
+version = "0.2.0"
 description = "Object-oriented, sensible-defaults wrapper around Plotly for building common charts fast."
 authors = [
     {name = "Edward",email = "edward_tl@hotmail.com"}

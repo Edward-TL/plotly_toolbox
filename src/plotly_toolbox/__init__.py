@@ -1,6 +1,7 @@
 """Plotly Toolbox — object-oriented, sensible-defaults wrapper around Plotly."""
 
 from plotly_toolbox.core import (
+    CategorySplit,
     ColorRange,
     Graph,
     OneDimensionPlot,
@@ -8,9 +9,11 @@ from plotly_toolbox.core import (
     Scale,
     Theme,
     TwoDimensionGraph,
+    deep_merge,
     get_option,
     set_option,
 )
+from plotly_toolbox.palettes import DARK, DEFAULT, MINIMAL
 from plotly_toolbox.xy.area import (
     AreaPlot,
     CategoricalAreas,
@@ -31,7 +34,7 @@ from plotly_toolbox.xy.line import (
     OneLinePlot,
 )
 
-__version__ = "0.1.1"
+__version__ = "0.2.0"
 
 __all__ = [
     # options / config
@@ -42,10 +45,15 @@ __all__ = [
     "Scale",
     "Theme",
     "Palette",
-    # base classes
+    "DEFAULT",
+    "DARK",
+    "MINIMAL",
+    # pipeline primitives
     "Graph",
     "OneDimensionPlot",
     "TwoDimensionGraph",
+    "CategorySplit",
+    "deep_merge",
     # line
     "LinePlot",
     "OneLinePlot",
